@@ -78,3 +78,4 @@ Este projeto foi desenvolvido com base nos conceitos e resultados apresentados n
 - **link para o artigo: (https://docs.google.com/document/d/e/2PACX-1vT4y6TJ7Mm4mpAbd8THa6-DRw4kUK4RremPxzbkchx1JhY1dZ3CpjXAP5NG9nOjdcnF-jV1xWgwMLNa/pub)**
   - *Autores: Nícolas Matheus Gonzaga Monteiro e Edmir Nicácio Lopes Neto*
 
+.

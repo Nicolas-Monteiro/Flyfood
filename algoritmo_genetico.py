@@ -4,7 +4,7 @@ import os
 
 # FUNÇÕES DE CUSTO E APTIDÃO 
 
-def custoCaminho(permutacao, matriz_custos, mapa_indice):
+def custo_caminho(permutacao, matriz_custos, mapa_indice):
     soma = 0
 
     R_indice = mapa_indice[0]
@@ -22,12 +22,12 @@ def custoCaminho(permutacao, matriz_custos, mapa_indice):
         
     return soma
 
-def calculaAptidao(populacao, matriz_custos, mapa_indice):
+def calcula_aptidao(populacao, matriz_custos, mapa_indice):
     listaAptidao = []
     listaCustos = []
     
     for individuo in populacao:
-        custo = custoCaminho(individuo, matriz_custos, mapa_indice)
+        custo = custo_caminho(individuo, matriz_custos, mapa_indice)
         listaCustos.append(custo)
         
         aptidao = 1 / custo
@@ -90,7 +90,7 @@ def inicializar_populacao(tamanho_populacao, pontos_interesse):
 
 def executar(tamanho_populacao):
     
-    NOME_ARQUIVO = "teste.txt"
+    NOME_ARQUIVO = "teste3.txt"
     STRING_CUSTOS = ""
     NUM_LINHAS = 0
 
@@ -136,40 +136,28 @@ def executar(tamanho_populacao):
     
     populacao_inicial = inicializar_populacao(tamanho_populacao, PONTOS_INTERESSE)
     
-    lista_aptidao, lista_custos = calculaAptidao(
+    lista_aptidao, lista_custos = calcula_aptidao(
         populacao_inicial, MATRIZ_CUSTOS, MAPA_INDICE
     )
     
     melhor_aptidao_indice = np.argmax(lista_aptidao)
     melhor_custo = lista_custos[melhor_aptidao_indice]
     melhor_rota = populacao_inicial[melhor_aptidao_indice]
-
-    
-    print("Matriz de Custos:")
-    print(MATRIZ_CUSTOS)
-    print("-" * 65)
-    print(f"Mapa de Tradução (Ponto -> Índice da Matriz): {MAPA_INDICE}")
-    print(f"Total de Pontos (N): {NUM_TOTAL_PONTOS} (Ponto de Retorno: 0, Pontos de Interesse: {PONTOS_INTERESSE})")
-    print("-" * 65)
-    
-    print(f"População Inicial (Tamanho: {tamanho_populacao}):")
-    
-    for i in range(tamanho_populacao):
-        is_melhor = " <-- MELHOR ROTA" if i == melhor_aptidao_indice else ""
-        
-        rota_str = ' -> '.join(map(str, populacao_inicial[i]))
-        
-        print(
-            f"Rota {i+1}: {populacao_inicial[i]} | Custo: {lista_custos[i]:.2f} | Aptidão: {lista_aptidao[i]:.4f}{is_melhor}"
-        )
-
-    print("-" * 65)
   
     melhor_rota_str = ' -> '.join(map(str, melhor_rota))
     print(f"Melhor Rota : 0 -> {melhor_rota_str} -> 0")
-    print(f"Custo Mínimo: {melhor_custo:.2f}")
-    print("===============================================================")
+    print(f"Custo Minimo: {melhor_custo:.2f}")
+
+
+# SELEÇÃO
+
+# CROSSING OVER
+
+# MUTAÇÃO
+ 
+# ALGORITMO GENÉTICO
+
 
 # CHAMADA DO PROGRAMA 
 if __name__ == "__main__":
-    executar(15)
+    executar(100)

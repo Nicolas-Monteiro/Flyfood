@@ -1,175 +1,249 @@
 import numpy as np
 import random
-import os
+import re
 
 # FUNÇÕES DE CUSTO E APTIDÃO 
 
-def custoCaminho(permutacao, matriz_custos, mapa_indice):
+def custo_caminho(permutacao, dic_distancias):
     soma = 0
-
-    R_indice = mapa_indice[0]
-    
-    v1_indice = mapa_indice[permutacao[0]]
-    soma += matriz_custos[R_indice, v1_indice]
     
     for i in range(len(permutacao) - 1):
-        a_indice = mapa_indice[permutacao[i]]
-        b_indice = mapa_indice[permutacao[i+1]]
-        soma += matriz_custos[a_indice, b_indice]
+        a = permutacao[i]
+        b = permutacao[i+1]
+        if (a, b) in dic_distancias:
+            soma += dic_distancias[(a, b)]
+        else:
+            raise ValueError(f"Caminho não encontrado no dicionário: ({a},{b})")
             
-    vN_indice = mapa_indice[permutacao[-1]]
-    soma += matriz_custos[vN_indice, R_indice]
+    ultimo_no = permutacao[-1]
+    primeiro_no = permutacao[0]
+    
+    if (ultimo_no, primeiro_no) in dic_distancias:
+        soma += dic_distancias[(ultimo_no, primeiro_no)]
+    else:
+        raise ValueError(f"Caminho de retorno não encontrado: ({ultimo_no},{primeiro_no})")
         
     return soma
 
-def calculaAptidao(populacao, matriz_custos, mapa_indice):
+def calcula_aptidao(populacao, dic_distancias):
     listaAptidao = []
     listaCustos = []
     
     for individuo in populacao:
-        custo = custoCaminho(individuo, matriz_custos, mapa_indice)
+        custo = custo_caminho(individuo, dic_distancias)
         listaCustos.append(custo)
         
-        aptidao = 1 / custo
+        aptidao = 1 / custo if custo > 0 else 0
         listaAptidao.append(aptidao)
         
     return listaAptidao, listaCustos
 
-# FUNÇÃO DE PROCESSAMENTO DA MATRIZ MODIFICADA
+# FUNÇÃO DE PROCESSAMENTO DE ENTRADA 
 
-def processar_matriz_de_custos(matriz_entrada, num_total_pontos):
+def processar_entrada(caminho_arquivo):
     
-    NOMES_PONTOS = list(range(num_total_pontos)) 
-    NUM_TOTAL_PONTOS = num_total_pontos
-    
-    elementos_str = matriz_entrada.replace('\n', ' ').replace('\t', ' ').split()
+    try:
+        with open(caminho_arquivo, 'r') as objArq:
+            conteudo = objArq.read()
+    except FileNotFoundError:
+        raise FileNotFoundError(f"ERRO: Arquivo não encontrado no caminho: '{caminho_arquivo}'")
+
+    limpo = re.sub(r'\s+', ' ', conteudo).strip()
+    elementos_str = limpo.split()
     
     try:
         pesos = [int(p) for p in elementos_str]
     except ValueError:
-        raise ValueError("ERRO: O arquivo de custos contém caracteres não numéricos.")
+        raise ValueError(f"ERRO: O arquivo {caminho_arquivo} contém dados não numéricos.")
 
-    matriz_custos = np.zeros((NUM_TOTAL_PONTOS, NUM_TOTAL_PONTOS), dtype=int)
+    total_de_custos_fornecidos = len(pesos)
     
-    mapa_indice = {nome: i for i, nome in enumerate(NOMES_PONTOS)}
+    NUM_TOTAL_PONTOS = 0
+    while NUM_TOTAL_PONTOS * (NUM_TOTAL_PONTOS - 1) / 2 < total_de_custos_fornecidos:
+        NUM_TOTAL_PONTOS += 1
     
+    if NUM_TOTAL_PONTOS * (NUM_TOTAL_PONTOS - 1) / 2 != total_de_custos_fornecidos:
+        raise ValueError(f"ERRO: O número de custos fornecidos ({total_de_custos_fornecidos}) não corresponde a uma matriz triangular válida.")
+    
+    dic_distancias = {}
     peso_indice = 0
     
-    for i in range(NUM_TOTAL_PONTOS):
-        for j in range(i + 1, NUM_TOTAL_PONTOS):
-            
-            if peso_indice >= len(pesos):
-                
-                num_pesos_esperados = NUM_TOTAL_PONTOS * (NUM_TOTAL_PONTOS - 1) // 2
-                raise ValueError(
-                    f"ERRO: O arquivo tem {len(pesos)} custos. O número de pontos ({NUM_TOTAL_PONTOS}) exige {num_pesos_esperados} custos."
-                )
+    for i in range(1, NUM_TOTAL_PONTOS):
+        for j in range(i + 1, NUM_TOTAL_PONTOS + 1): 
             
             peso = pesos[peso_indice]
             
-            matriz_custos[i, j] = peso
-            matriz_custos[j, i] = peso
+            dic_distancias[(i, j)] = peso
+            dic_distancias[(j, i)] = peso
             
             peso_indice += 1
             
-    pontos_interesse = NOMES_PONTOS[1:] 
-    
-    return matriz_custos, pontos_interesse, mapa_indice
+    return dic_distancias, NUM_TOTAL_PONTOS
 
-# INICIALIZAR POPULAÇÃO 
+# --- INICIALIZAR POPULAÇÃO (CORRIGIDO) ---
 
-def inicializar_populacao(tamanho_populacao, pontos_interesse):
+def inicializar_populacao(tamanho_populacao, qtde_cidades):
     populacao = []
+    
+    cidades_base = list(range(1, qtde_cidades + 1)) 
+    
     for _ in range(tamanho_populacao):
-        individuo = pontos_interesse[:]
+       
+        individuo = cidades_base[:]
         random.shuffle(individuo)
         populacao.append(individuo)
     return populacao
 
-# FUNÇÃO DE EXECUÇÃO MODIFICADA
+# SELEÇÃO 
 
-def executar(tamanho_populacao):
+def selecao_torneio(populacao, lista_aptidao, tamanho_torneio=5):
+   
+    melhor_indice = -1
+    melhor_aptidao = -1.0
     
-    NOME_ARQUIVO = "teste.txt"
-    STRING_CUSTOS = ""
-    NUM_LINHAS = 0
-
-    try:
-        if not os.path.exists(NOME_ARQUIVO):
-            raise FileNotFoundError(f"O arquivo '{NOME_ARQUIVO}' não foi encontrado.")
-            
-        with open(NOME_ARQUIVO, "r") as arquivo:
-            linhas = arquivo.readlines()
-            STRING_CUSTOS = "".join(linhas)
-            
-            NUM_LINHAS = sum(1 for linha in linhas if linha.strip())
-            
-        NUM_TOTAL_PONTOS = NUM_LINHAS + 1
+    tamanho_populacao = len(populacao)
+    participantes_indices = random.sample(range(tamanho_populacao), tamanho_torneio)
+    
+    for indice in participantes_indices:
+        aptidao_atual = lista_aptidao[indice]
         
-        if NUM_TOTAL_PONTOS < 2:
-            print("=" * 65)
-            print("ERRO: O arquivo deve conter pelo menos 1 linha de custos (para 2 pontos no total: 0 e 1).")
-            print("=" * 65)
-            return
+        if aptidao_atual > melhor_aptidao:
+            melhor_aptidao = aptidao_atual
+            melhor_indice = indice
+            
+    return populacao[melhor_indice]
 
-    except FileNotFoundError as e:
-        print("=" * 65)
-        print(f"ERRO DE ARQUIVO: {e}")
-        print("=" * 65)
-        return
-    except Exception as e:
-        print("=" * 65)
-        print(f"ERRO INESPERADO ao abrir/ler o arquivo: {e}")
-        print("=" * 65)
-        return
+# CROSSOVER
+
+def crossover(pai1, pai2):
+   
+    tamanho = len(pai1)
+    
+    ponto_corte1 = random.randint(0, tamanho - 1)
+    ponto_corte2 = random.randint(0, tamanho - 1)
+    
+    if ponto_corte1 > ponto_corte2:
+        ponto_corte1, ponto_corte2 = ponto_corte2, ponto_corte1
+        
+    filho = [None] * tamanho
+    segmento_pai1 = pai1[ponto_corte1:ponto_corte2 + 1]
+    filho[ponto_corte1:ponto_corte2 + 1] = segmento_pai1
+    
+    genes_presentes = set(segmento_pai1)
+    p2_index = ponto_corte2 + 1
+    f_index = ponto_corte2 + 1
+    
+    for _ in range(tamanho):
+        
+        if p2_index >= tamanho: p2_index = 0
+        if f_index >= tamanho: f_index = 0
+            
+        gene_pai2 = pai2[p2_index]
+        
+        if filho[f_index] is None:
+            if gene_pai2 not in genes_presentes:
+                filho[f_index] = gene_pai2
+                f_index += 1
+                
+        p2_index += 1
+            
+    return filho
+
+# MUTAÇÃO
+
+def mutacao(individuo, taxa_mutacao=0.05):
+    
+    if random.random() < taxa_mutacao:
+        tamanho = len(individuo)
+        
+        ponto_corte1 = random.randint(0, tamanho - 1)
+        ponto_corte2 = random.randint(0, tamanho - 1)
+        
+        if ponto_corte1 > ponto_corte2:
+            ponto_corte1, ponto_corte2 = ponto_corte2, ponto_corte1
+        
+        segmento_a_inverter = individuo[ponto_corte1 : ponto_corte2 + 1]
+        segmento_invertido = segmento_a_inverter[::-1] 
+        
+        individuo[ponto_corte1 : ponto_corte2 + 1] = segmento_invertido
+        
+    return individuo
+ 
+# ALGORITMO GENÉTICO
+
+def algoritmo_genetico(dic_distancias, qtde_cidades, parametros):
+    
+    TAMANHO_POP = parametros['tamanho_populacao']
+    MAX_GERACOES = parametros['max_geracoes']
+    TAXA_CROSSOVER = parametros['taxa_crossover']
+    TAXA_MUTACAO = parametros['taxa_mutacao']
+    TAM_TORNEIO = parametros['tamanho_torneio']
+    
+    populacao_atual = inicializar_populacao(TAMANHO_POP, qtde_cidades)
+    
+    melhor_custo_global = float('inf')
+    melhor_rota_global = []
+    
+    for geracao in range(MAX_GERACOES):
+        
+        lista_aptidao, lista_custos = calcula_aptidao(populacao_atual, dic_distancias)
+        
+        indice_melhor_atual = np.argmin(lista_custos) 
+        custo_melhor_atual = lista_custos[indice_melhor_atual]
+        
+        if custo_melhor_atual < melhor_custo_global:
+            melhor_custo_global = custo_melhor_atual
+            melhor_rota_global = populacao_atual[indice_melhor_atual]
+            print(f"Geração {geracao}: Novo Melhor Custo -> {melhor_custo_global:.2f}")
+
+        nova_populacao = []
+        
+        for _ in range(TAMANHO_POP // 2):
+            
+            pai1 = selecao_torneio(populacao_atual, lista_aptidao, TAM_TORNEIO)
+            pai2 = selecao_torneio(populacao_atual, lista_aptidao, TAM_TORNEIO)
+            
+            filho1 = pai1[:]
+            filho2 = pai2[:]
+            
+            if random.random() < TAXA_CROSSOVER:
+                filho1 = crossover(pai1, pai2)
+                filho2 = crossover(pai2, pai1) 
+
+            filho1 = mutacao(filho1, TAXA_MUTACAO)
+            filho2 = mutacao(filho2, TAXA_MUTACAO)
+            
+            nova_populacao.append(filho1)
+            nova_populacao.append(filho2)
+            
+        populacao_atual = nova_populacao
+        
+    return melhor_rota_global, melhor_custo_global
+
+# FUNÇÃO DE EXECUÇÃO  
+
+def executar(caminho_arquivo):
+    
+    PARAMETROS_AG = {
+        'tamanho_populacao': 100,
+        'max_geracoes': 200,
+        'taxa_crossover': 0.9,
+        'taxa_mutacao': 0.05, 
+        'tamanho_torneio': 10
+    }
     
     try:
-        MATRIZ_CUSTOS, PONTOS_INTERESSE, MAPA_INDICE = processar_matriz_de_custos(
-            STRING_CUSTOS, NUM_TOTAL_PONTOS 
-        )
-    except ValueError as e:
-        print("=" * 65)
-        print(f"ERRO NO PROCESSAMENTO DOS DADOS: {e}")
-        print("Verifique se o conteúdo do arquivo 'teste.txt' tem a quantidade correta de custos.")
-        print("=" * 65)
+        dic_distancias, qtde_cidades = processar_entrada(caminho_arquivo)
+    except (ValueError, FileNotFoundError) as e:
+        print(f"ERRO DE LEITURA/PROCESSAMENTO: {e}")
         return 
-    
-    populacao_inicial = inicializar_populacao(tamanho_populacao, PONTOS_INTERESSE)
-    
-    lista_aptidao, lista_custos = calculaAptidao(
-        populacao_inicial, MATRIZ_CUSTOS, MAPA_INDICE
-    )
-    
-    melhor_aptidao_indice = np.argmax(lista_aptidao)
-    melhor_custo = lista_custos[melhor_aptidao_indice]
-    melhor_rota = populacao_inicial[melhor_aptidao_indice]
 
+    melhor_rota, melhor_custo = algoritmo_genetico(dic_distancias, qtde_cidades, PARAMETROS_AG)
     
-    print("Matriz de Custos:")
-    print(MATRIZ_CUSTOS)
-    print("-" * 65)
-    print(f"Mapa de Tradução (Ponto -> Índice da Matriz): {MAPA_INDICE}")
-    print(f"Total de Pontos (N): {NUM_TOTAL_PONTOS} (Ponto de Retorno: 0, Pontos de Interesse: {PONTOS_INTERESSE})")
-    print("-" * 65)
-    
-    print(f"População Inicial (Tamanho: {tamanho_populacao}):")
-    
-    for i in range(tamanho_populacao):
-        is_melhor = " <-- MELHOR ROTA" if i == melhor_aptidao_indice else ""
-        
-        rota_str = ' -> '.join(map(str, populacao_inicial[i]))
-        
-        print(
-            f"Rota {i+1}: {populacao_inicial[i]} | Custo: {lista_custos[i]:.2f} | Aptidão: {lista_aptidao[i]:.4f}{is_melhor}"
-        )
+    print(f"RESULTADO FINAL DO ALGORITMO GENÉTICO (N={qtde_cidades})\n")
+    print(f"Melhor Custo Encontrado: {melhor_custo:.2f}")
+    print(f"Melhor Rota (Início -> Fim): {melhor_rota}")
 
-    print("-" * 65)
-  
-    melhor_rota_str = ' -> '.join(map(str, melhor_rota))
-    print(f"Melhor Rota : 0 -> {melhor_rota_str} -> 0")
-    print(f"Custo Mínimo: {melhor_custo:.2f}")
-    print("===============================================================")
-
-# CHAMADA DO PROGRAMA 
 if __name__ == "__main__":
-    executar(15)
+
+    executar("teste_brasil58.txt")

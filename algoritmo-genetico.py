@@ -186,35 +186,32 @@ def algoritmo_genetico(dic_distancias, qtde_cidades, parametros):
     
     for geracao in range(MAX_GERACOES):
         
-        lista_aptidao, lista_custos = calcula_aptidao(populacao_atual, dic_distancias)
+        lista_aptidao_atual, lista_custos_atual = calcula_aptidao(populacao_atual, dic_distancias)
         
-        indice_melhor_atual = np.argmin(lista_custos) 
-        custo_melhor_atual = lista_custos[indice_melhor_atual]
+        indice_melhor_atual = np.argmin(lista_custos_atual) 
+        custo_melhor_atual = lista_custos_atual[indice_melhor_atual]
+        rota_melhor_atual = populacao_atual[indice_melhor_atual]
         
         if custo_melhor_atual < melhor_custo_global:
             melhor_custo_global = custo_melhor_atual
-            melhor_rota_global = populacao_atual[indice_melhor_atual]
+            melhor_rota_global = rota_melhor_atual[:]
             print(f"Geração {geracao}: Novo Melhor Custo -> {melhor_custo_global:.2f}")
-
-        nova_populacao = []
+    
+        nova_populacao = [melhor_rota_global[:]] 
         
-        for _ in range(TAMANHO_POP // 2):
+        while len(nova_populacao) < TAMANHO_POP:
             
-            pai1 = selecao_torneio(populacao_atual, lista_aptidao, TAM_TORNEIO)
-            pai2 = selecao_torneio(populacao_atual, lista_aptidao, TAM_TORNEIO)
-            
-            filho1 = pai1[:]
-            filho2 = pai2[:]
+            pai1 = selecao_torneio(populacao_atual, lista_aptidao_atual, TAM_TORNEIO)
+            pai2 = selecao_torneio(populacao_atual, lista_aptidao_atual, TAM_TORNEIO)
             
             if random.random() < TAXA_CROSSOVER:
-                filho1 = crossover(pai1, pai2)
-                filho2 = crossover(pai2, pai1) 
+                filho = crossover(pai1, pai2)
+            else:
+                filho = pai1[:] 
 
-            filho1 = mutacao(filho1, TAXA_MUTACAO)
-            filho2 = mutacao(filho2, TAXA_MUTACAO)
+            filho = mutacao(filho, TAXA_MUTACAO)
             
-            nova_populacao.append(filho1)
-            nova_populacao.append(filho2)
+            nova_populacao.append(filho)
             
         populacao_atual = nova_populacao
         
@@ -225,24 +222,31 @@ def algoritmo_genetico(dic_distancias, qtde_cidades, parametros):
 def executar(caminho_arquivo):
     
     PARAMETROS_AG = {
-        'tamanho_populacao': 100,
-        'max_geracoes': 200,
+        'tamanho_populacao': 200,
+        'max_geracoes': 1000,
         'taxa_crossover': 0.9,
-        'taxa_mutacao': 0.05, 
-        'tamanho_torneio': 10
+        'taxa_mutacao': 0.1, 
+        'tamanho_torneio': 4
     }
     
     try:
         dic_distancias, qtde_cidades = processar_entrada(caminho_arquivo)
     except (ValueError, FileNotFoundError) as e:
         print(f"ERRO DE LEITURA/PROCESSAMENTO: {e}")
+       
         return 
-
+    tempo_inicio = time.time()
     melhor_rota, melhor_custo = algoritmo_genetico(dic_distancias, qtde_cidades, PARAMETROS_AG)
+    tempo_total = time.time() - tempo_inicio
     
     print(f"RESULTADO FINAL DO ALGORITMO GENÉTICO (N={qtde_cidades})\n")
     print(f"Melhor Custo Encontrado: {melhor_custo:.2f}")
     print(f"Melhor Rota (Início -> Fim): {melhor_rota}")
+    print(f"Tempo de Execução Total: {tempo_total:.4f} segundos")
+
+if __name__ == "__main__":
+
+    executar("teste_brasil58.txt")
 
 if __name__ == "__main__":
 

@@ -1,6 +1,7 @@
 import numpy as np
 import random
 import re
+import time
 
 # FUNÇÕES DE CUSTO E APTIDÃO 
 

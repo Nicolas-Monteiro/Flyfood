@@ -1,16 +1,18 @@
 # FlyFood: Otimizador de Rotas 🛸
 
-Este projeto é uma implementação em Python para solucionar o Problema do Caixeiro Viajante (PCV) utilizando uma abordagem de força bruta. Ele calcula a rota mais curta que passa por um conjunto de pontos e retorna à origem.
+Este projeto é uma implementação em Python para solucionar o Problema do Caixeiro Viajante (PCV) aplicado à logística de entregas de drones. O sistema foi desenvolvido em duas etapas, oferecendo **duas abordagens distintas** de resolução:
 
-Além do cálculo principal, o projeto inclui scripts para visualizar a rota ótima em um gráfico e para gerar uma análise visual da complexidade computacional do algoritmo.
+1.  **Força Bruta (Exact Solver):** Garante a rota matematicamente ótima testando todas as permutações ($O(N!)$). Ideal para validação e pequenas instâncias ($N \le 12$).
+2.  **Algoritmo Genético (Heuristic Solver):** Utiliza conceitos evolutivos (Seleção, Crossover e Mutação) para encontrar rotas eficientes em instâncias de grande escala ($N > 12$) e benchmarks como a TSPLIB (ex: `brazil58`), onde a força bruta seria inviável.
 
 ## ✨ Funcionalidades
 
-Este repositório contém 3 funcionalidades principais, cada uma em seu próprio arquivo:
+Este repositório contém 4 scripts principais, divididos entre métodos de resolução e ferramentas de análise visual:
 
-1.  **`calcular-melhor-rota.py`**: O script principal que recebe uma matriz de pontos e calcula a rota mais curta possível, imprimindo o resultado no terminal.
-2.  **`grafico-processamento.py`**: Um script visual que plota os pontos e a melhor rota encontrada em um gráfico 2D, ajudando a entender o resultado.
-3.  **`grafico-complexidade.py`**: Um script educacional que gera um gráfico comparando a complexidade Fatorial `$O(N!)$` (usada neste projeto) com outras complexidades (Linear e Quadrática) para ilustrar por que a força bruta é inviável para muitos pontos.
+* **`calcular-melhor-rota.py`:** Implementação da **Força Bruta**. Recebe uma matriz de pontos, calcula todas as permutações possíveis e retorna a distância mínima global.
+* **`algoritmo_genetico.py`:** Implementação da **Meta-heurística**. Utiliza Crossover Ordenado e Mutação por Inversão para resolver matrizes grandes ou arquivos `.tsp` (TSPLIB) em segundos.
+* **`grafico-processamento.py`:** Um script visual que plota as coordenadas e desenha a melhor rota encontrada em um gráfico 2D, facilitando a interpretação do trajeto.
+* **`grafico-complexidade.py`:** Um script educacional que gera um gráfico comparativo entre as complexidades Fatorial $O(N!)$, Quadrática $O(N^2)$ e Linear $O(N)$, ilustrando o limite operacional dos métodos exatos.
 
    ## ⚙️ Instalação e Configuração
 
@@ -41,7 +43,7 @@ Cada funcionalidade pode ser executada de forma independente através do termina
 
 ---
 
-### 1. Encontrar a melhor rota para o drone
+### 1. Encontrar a melhor rota para o drone ( força bruta )
 
 ▶️ **Para executar, use o comando:**
 ```bash
@@ -51,8 +53,15 @@ Saída esperada: O terminal irá imprimir a sequência ótima dos pontos e a dis
 
 Nota: Para alterar os pontos de entrega, você precisará editar a matriz de coordenadas diretamente dentro do arquivo calcular-melhor-rota.py.
 
+### 2. Encontrar a melhor rota para o drone ( Heurística )
+```bash
+python algoritimo-genetico.py
+```
+Saída esperada: O terminal irá imprimir a sequência ótima dos pontos e o custo total da rota.
 
-### 2. Visualizar o gráfico de tempo de processamento do algoritmo
+Nota: Para alterar os pontos de entrega, você precisará editar a entrada do código para o nome do arquivo de teste desejado
+
+### 3. Visualizar o gráfico de tempo de processamento do algoritmo
 
 ▶️ **Para executar, use o comando:**
 ```bash
@@ -60,7 +69,7 @@ python grafico-processamento.py
 ```
 Saída esperada: Uma janela se abrirá mostrando o gráfico do tempo de processamento do problema em questão
 
-### 3. Visualizar o gráfico de complexidade 
+### 4. Visualizar o gráfico de complexidade 
 
 ▶️ **Para executar, use o comando:**
 ```bash

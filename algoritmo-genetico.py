@@ -247,8 +247,6 @@ def executar(caminho_arquivo):
 
 if __name__ == "__main__":
 
-    executar("teste_brasil58.txt")
+    executar("teste1.txt")
 
-if __name__ == "__main__":
 
-    executar("teste_brasil58.txt")
